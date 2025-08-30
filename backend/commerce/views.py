@@ -105,7 +105,7 @@ class OrderViewSet(viewsets.ViewSet):
                     )
                 created_orders.append(order)
 
-            # ✅ Clear cart after placing all orders
+  
             cart.items.all().delete()
 
         return Response(
