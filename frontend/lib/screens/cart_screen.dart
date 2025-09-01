@@ -28,30 +28,30 @@ class _CartScreenState extends State<CartScreen> {
       await ApiService.deleteCartItem(cartItemId);
       _refreshCart();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Item removed from cart"),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text("Item removed from cart"),
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Error: $e"),
-          backgroundColor: Colors.red,
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     }
   }
 
-  Future<void> _incrementItem(int itemId, int currentQty) async {
+  Future<void> _incrementItem(int itemId) async {
     try {
-      await ApiService.addToCart(itemId, currentQty + 1);
+      await ApiService.addToCart(itemId, 1);
       _refreshCart();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Error: $e"),
-          backgroundColor: Colors.red,
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     }
@@ -60,7 +60,7 @@ class _CartScreenState extends State<CartScreen> {
   Future<void> _decrementItem(int itemId, int currentQty, int cartItemId) async {
     try {
       if (currentQty > 1) {
-        await ApiService.addToCart(itemId, currentQty - 1);
+        await ApiService.removeFromCart(itemId);
       } else {
         await ApiService.deleteCartItem(cartItemId);
       }
@@ -69,7 +69,7 @@ class _CartScreenState extends State<CartScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Error: $e"),
-          backgroundColor: Colors.red,
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     }
@@ -77,6 +77,8 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Your Cart"),
@@ -92,14 +94,16 @@ class _CartScreenState extends State<CartScreen> {
             return Center(
               child: Text(
                 "Error: ${snapshot.error}",
-                style: const TextStyle(color: Colors.red),
+                style: TextStyle(color: colors.error),
               ),
             );
-          } else if (!snapshot.hasData || snapshot.data!["restaurants"] == null || (snapshot.data!["restaurants"] as List).isEmpty) {
-            return const Center(
+          } else if (!snapshot.hasData ||
+              snapshot.data!["restaurants"] == null ||
+              (snapshot.data!["restaurants"] as List).isEmpty) {
+            return Center(
               child: Text(
                 "Your cart is empty",
-                style: TextStyle(fontSize: 18, color: Colors.grey),
+                style: TextStyle(fontSize: 18, color: colors.onBackground),
               ),
             );
           }
@@ -131,30 +135,33 @@ class _CartScreenState extends State<CartScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Restaurant Header
                             Text(
                               restaurantName,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.deepPurple,
+                                color: colors.primary,
                               ),
                             ),
                             const SizedBox(height: 6),
                             const Divider(),
-                            // Items of the restaurant
                             ...items.map((item) {
                               final cartItemId = item["id"];
                               final itemId = item["item"];
                               final itemName = item["item_name"];
                               final qty = item["quantity"];
-                              final price = double.tryParse(item["unit_price"].toString()) ?? 0;
-                              final lineTotal = (price * qty).toStringAsFixed(2);
+                              final price = double.tryParse(
+                                      item["unit_price"].toString()) ??
+                                  0;
+                              final lineTotal =
+                                  (price * qty).toStringAsFixed(2);
 
                               return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 6),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 6),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
                                       child: Text(
@@ -166,8 +173,10 @@ class _CartScreenState extends State<CartScreen> {
                                       ),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.remove_circle, color: Colors.red),
-                                      onPressed: () => _decrementItem(itemId, qty, cartItemId),
+                                      icon: Icon(Icons.remove_circle,
+                                          color: colors.error),
+                                      onPressed: () => _decrementItem(
+                                          itemId, qty, cartItemId),
                                     ),
                                     Text(
                                       "$qty",
@@ -177,35 +186,38 @@ class _CartScreenState extends State<CartScreen> {
                                       ),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.add_circle, color: Colors.green),
-                                      onPressed: () => _incrementItem(itemId, qty),
+                                      icon: Icon(Icons.add_circle,
+                                          color: colors.secondary),
+                                      onPressed: () =>
+                                          _incrementItem(itemId),
                                     ),
                                     Text(
                                       "₹$lineTotal",
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.blueGrey,
+                                        color: colors.onBackground,
                                       ),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.delete, color: Colors.red),
-                                      onPressed: () => _deleteItem(cartItemId),
+                                      icon: Icon(Icons.delete,
+                                          color: colors.error),
+                                      onPressed: () =>
+                                          _deleteItem(cartItemId),
                                     ),
                                   ],
                                 ),
                               );
                             }).toList(),
                             const Divider(),
-                            // Restaurant total
                             Align(
                               alignment: Alignment.centerRight,
                               child: Text(
                                 "Restaurant Total: ₹${restaurantTotal.toStringAsFixed(2)}",
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.green,
+                                  color: colors.secondary,
                                 ),
                               ),
                             ),
@@ -216,11 +228,11 @@ class _CartScreenState extends State<CartScreen> {
                   },
                 ),
               ),
-              // Grand Total
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: colors.background,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.05),
@@ -241,10 +253,10 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                     Text(
                       "₹${subtotal.toStringAsFixed(2)}",
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.green,
+                        color: colors.secondary,
                       ),
                     ),
                   ],

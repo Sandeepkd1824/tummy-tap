@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'TummyTap',
-      theme: AppThemes.classic, // 👈 Change theme here
+      theme: AppThemes.spicy, // 👈 Change theme here
       initialRoute: LoginScreen.route,
       routes: {
         LoginScreen.route: (context) => const LoginScreen(),

@@ -28,23 +28,17 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadCart();
   }
 
-  /// Refresh menu items from API
   Future<void> _refreshMenu() async {
-    setState(() {
-      _isMenuLoading = true;
-    });
+    setState(() => _isMenuLoading = true);
     try {
       menuItems = ApiService.fetchMenuItems();
     } catch (e) {
       debugPrint("Error fetching menu: $e");
     } finally {
-      setState(() {
-        _isMenuLoading = false;
-      });
+      setState(() => _isMenuLoading = false);
     }
   }
 
-  /// Load cart data from API
   Future<void> _loadCart() async {
     try {
       final cartData = await ApiService.getCartItems();
@@ -68,11 +62,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// Update cart quantity via API
   void _updateCart(int itemId, int newQty) async {
     final currentQty = cart[itemId] ?? 0;
 
-    // Update UI immediately
     setState(() {
       if (newQty == 0) {
         cart.remove(itemId);
@@ -88,7 +80,6 @@ class _HomeScreenState extends State<HomeScreen> {
         final quantityToAdd = newQty - currentQty;
         await ApiService.addToCart(itemId, quantityToAdd);
       } else if (newQty < currentQty) {
-        // Remove old quantity & add new if needed
         await ApiService.removeFromCart(itemId);
         if (newQty > 0) {
           await ApiService.addToCart(itemId, newQty);
@@ -99,8 +90,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Failed to update cart. Try again!")),
       );
-
-      // Rollback UI if API fails
       setState(() {
         if (currentQty == 0) {
           cart.remove(itemId);
@@ -111,20 +100,20 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// Logout user and redirect to login
   Future<void> _logout(BuildContext context) async {
     await TokenStorage.clearTokens();
     Navigator.pushReplacementNamed(context, LoginScreen.route);
   }
 
-  /// Calculate total items in cart
   int get totalItems =>
       cart.values.fold(0, (previous, current) => previous + current);
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: theme.colorScheme.surface,
       body: RefreshIndicator(
         onRefresh: () async {
           await _refreshMenu();
@@ -133,16 +122,17 @@ class _HomeScreenState extends State<HomeScreen> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // Top AppBar
             SliverAppBar(
               floating: true,
               pinned: true,
-              snap: false,
               elevation: 2,
-              backgroundColor: Colors.deepOrange,
-              title: const Text(
+              backgroundColor: theme.colorScheme.primary,
+              title: Text(
                 "🍔 TummyTap",
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
               actions: [
                 IconButton(
@@ -178,46 +168,45 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Menu Items Section
-            SliverFillRemaining(
+            // ✅ Menu Section (Fixed scrolling)
+            SliverToBoxAdapter(
               child: _isCartLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Padding(
+                      padding: EdgeInsets.all(50),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
                   : FutureBuilder<List<dynamic>>(
                       future: menuItems,
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
-                          return const Center(
-                              child: CircularProgressIndicator());
+                          return const Padding(
+                            padding: EdgeInsets.all(50),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
                         } else if (snapshot.hasError) {
-                          return Center(
+                          return Padding(
+                            padding: const EdgeInsets.all(20),
                             child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 const Icon(Icons.error_outline,
                                     color: Colors.red, size: 40),
-                                const SizedBox(height: 10),
-                                Text(
-                                  "Error loading menu\n${snapshot.error}",
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(color: Colors.red),
-                                ),
+                                Text("Error: ${snapshot.error}"),
                                 const SizedBox(height: 15),
                                 ElevatedButton.icon(
+                                  onPressed: _refreshMenu,
                                   icon: const Icon(Icons.refresh),
                                   label: const Text("Retry"),
-                                  onPressed: _refreshMenu,
-                                )
+                                ),
                               ],
                             ),
                           );
                         } else if (!snapshot.hasData ||
                             snapshot.data!.isEmpty) {
-                          return const Center(
-                            child: Text(
-                              "No menu items found 😢",
-                              style: TextStyle(fontSize: 18),
-                            ),
+                          return const Padding(
+                            padding: EdgeInsets.all(30),
+                            child: Center(
+                                child: Text("No menu items found 😢")),
                           );
                         } else {
                           final items = snapshot.data!
@@ -228,10 +217,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               .toList();
 
                           return items.isEmpty
-                              ? const Center(
-                                  child: Text(
-                                    "No matching results found",
-                                    style: TextStyle(fontSize: 16),
+                              ? const Padding(
+                                  padding: EdgeInsets.all(30),
+                                  child: Center(
+                                    child: Text(
+                                        "No matching results found"),
                                   ),
                                 )
                               : Padding(
@@ -250,23 +240,34 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
 
-      // Floating Cart Button
-      floatingActionButton: cart.isNotEmpty
-          ? FloatingActionButton.extended(
-              backgroundColor: Colors.deepOrange,
-              icon: const Icon(Icons.shopping_cart),
-              label: Text("View Cart ($totalItems)"),
-              onPressed: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const CartScreen()),
-                );
-                _loadCart();
-              },
+      // ✅ Full-width bottom cart button
+      bottomNavigationBar: cart.isNotEmpty
+          ? Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.shopping_cart),
+                  label: Text("View Cart ($totalItems)"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const CartScreen()),
+                    );
+                    _loadCart();
+                  },
+                ),
+              ),
             )
           : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }
