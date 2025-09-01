@@ -3,8 +3,13 @@ import 'payment_screen.dart';
 
 class ConfirmAddressScreen extends StatelessWidget {
   final String address;
+  final int addressId;
 
-  const ConfirmAddressScreen({super.key, required this.address});
+  const ConfirmAddressScreen({
+    super.key,
+    required this.address,
+    required this.addressId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +56,9 @@ class ConfirmAddressScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const PaymentScreen(),
+                          builder: (_) => PaymentScreen(
+                            addressId: addressId,
+                          ),
                         ),
                       );
                     },

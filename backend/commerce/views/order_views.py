@@ -20,6 +20,13 @@ class PlaceOrderView(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         address_id = request.data.get("address_id")
+        payment_method = request.data.get("payment_method", "cod")
+
+        if payment_method not in dict(Order.PAYMENT_CHOICES):
+            return Response(
+                {"error": "Invalid payment method"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             address = Address.objects.get(pk=address_id, user=request.user)
@@ -52,6 +59,7 @@ class PlaceOrderView(generics.GenericAPIView):
                     postal_code=address.postal_code,
                     latitude=address.latitude,
                     longitude=address.longitude,
+                    payment_method=payment_method,
                 )
                 for ci in items:
                     OrderItem.objects.create(
@@ -68,3 +76,26 @@ class PlaceOrderView(generics.GenericAPIView):
             OrderSerializer(created_orders, many=True).data,
             status=status.HTTP_201_CREATED,
         )
+
+
+class UpdateOrderStatusView(generics.UpdateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = OrderSerializer
+    queryset = Order.objects.all()
+
+    def patch(self, request, *args, **kwargs):
+        order = self.get_object()
+
+        # Only allow restaurant owners (or admin) to update
+        if order.restaurant.owner != request.user and not request.user.is_staff:
+            return Response({"error": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+
+        new_status = request.data.get("status")
+        if new_status not in dict(Order.STATUS_CHOICES):
+            return Response(
+                {"error": "Invalid status"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        order.status = new_status
+        order.save()
+        return Response(OrderSerializer(order).data)

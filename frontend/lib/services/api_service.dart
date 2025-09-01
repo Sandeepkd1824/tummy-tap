@@ -7,6 +7,8 @@ class ApiService {
   static const String accountsBase = "http://127.0.0.1:8000/api/accounts";
   static const String restaurantsBase = "http://127.0.0.1:8000/api/restaurants";
   static const String cartBase = "http://127.0.0.1:8000/api/cart";
+  static const String customersBase = "http://127.0.0.1:8000/api/customers";
+  static const String ordersBase = "http://127.0.0.1:8000/api/orders";
 
   // ----------------- AUTH -----------------
 
@@ -45,7 +47,7 @@ class ApiService {
       return {"error": "OTP verification failed"};
     }
   }
-
+  
   // Login User - save tokens
   static Future<Map<String, dynamic>> loginUser(
       String username, String password) async {
@@ -78,7 +80,7 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      // Save new access token, refresh token remains same
+            // Save new access token, refresh token remains same
       await TokenStorage.saveTokens(data["access"], refresh);
       return true;
     } else {
@@ -114,7 +116,7 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return data["results"]; // paginated response
+      return data["results"];
     } else {
       throw Exception("Failed to load menu items");
     }
@@ -188,35 +190,123 @@ class ApiService {
   }
 
   // Remove item from cart
-static Future<Map<String, dynamic>> removeFromCart(int itemId) async {
-  String? token = await TokenStorage.getAccessToken();
-  final response = await http.post(
-    Uri.parse("$cartBase/remove_item/"),
-    headers: {
-      "Authorization": "Bearer $token",
-      "Content-Type": "application/json",
-    },
-    body: json.encode({"item_id": itemId}),
-  );
+  static Future<Map<String, dynamic>> removeFromCart(int itemId) async {
+    String? token = await TokenStorage.getAccessToken();
+    final response = await http.post(
+      Uri.parse("$cartBase/remove_item/"),
+      headers: {
+        "Authorization": "Bearer $token",
+        "Content-Type": "application/json",
+      },
+      body: json.encode({"item_id": itemId}),
+    );
 
-  if (response.statusCode == 200) {
-    return jsonDecode(response.body);
-  } else {
-    return {"error": "Failed to remove from cart"};
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      return {"error": "Failed to remove from cart"};
+    }
   }
-}
 
 // Delete a specific item from cart
-static Future<void> deleteCartItem(int itemId) async {
-  final token = await TokenStorage.getAccessToken();  // ✅ FIXED
-  final url = Uri.parse("$cartBase/delete_item/$itemId/");
-  final response = await http.delete(url, headers: {
-    "Authorization": "Bearer $token",
-  });
+  static Future<void> deleteCartItem(int itemId) async {
+    final token = await TokenStorage.getAccessToken();
+    final url = Uri.parse("$cartBase/delete_item/$itemId/");
+    final response = await http.delete(url, headers: {
+      "Authorization": "Bearer $token",
+    });
 
-  if (response.statusCode != 204 && response.statusCode != 200) {
-    throw Exception("Failed to delete item from cart");
+    if (response.statusCode != 204 && response.statusCode != 200) {
+      throw Exception("Failed to delete item from cart");
+    }
+  }
+
+  // ----------------- ADDRESS -----------------
+
+  static Future<Map<String, dynamic>> addAddress(Map<String, dynamic> address) async {
+    String? token = await TokenStorage.getAccessToken();
+    final response = await http.post(
+      Uri.parse("$customersBase/addresses/"),
+      headers: {
+        "Authorization": "Bearer $token",
+        "Content-Type": "application/json",
+      },
+      body: json.encode(address),
+    );
+
+    if (response.statusCode == 201) {
+      return jsonDecode(response.body);
+    } else {
+      return {"error": "Failed to add address"};
+    }
+  }
+
+  static Future<List<dynamic>> fetchAddresses() async {
+    String? token = await TokenStorage.getAccessToken();
+    final response = await http.get(
+      Uri.parse("$customersBase/addresses/"),
+      headers: {"Authorization": "Bearer $token"},
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Failed to fetch addresses");
+    }
+  }
+
+  // ----------------- ORDERS -----------------
+
+  static Future<Map<String, dynamic>> placeOrder(int addressId) async {
+    String? token = await TokenStorage.getAccessToken();
+    final response = await http.post(
+      Uri.parse("$ordersBase/place/"),
+      headers: {
+        "Authorization": "Bearer $token",
+        "Content-Type": "application/json",
+      },
+      body: json.encode({"address_id": addressId}),
+    );
+
+    if (response.statusCode == 201) {
+      return jsonDecode(response.body);
+    } else {
+      return {"error": "Failed to place order"};
+    }
+  }
+
+  static Future<List<dynamic>> fetchOrders() async {
+    String? token = await TokenStorage.getAccessToken();
+    final response = await http.get(
+      Uri.parse("$ordersBase/"),
+      headers: {"Authorization": "Bearer $token"},
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Failed to fetch orders");
+    }
+  }
+
+  // ----------------- PAYMENTS -----------------
+
+  static Future<Map<String, dynamic>> makePayment(
+      int orderId, String method) async {
+    String? token = await TokenStorage.getAccessToken();
+    final response = await http.post(
+      Uri.parse("$ordersBase/$orderId/payment/"),
+      headers: {
+        "Authorization": "Bearer $token",
+        "Content-Type": "application/json",
+      },
+      body: json.encode({"method": method}),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      return {"error": "Payment failed"};
+    }
   }
 }
-}
-

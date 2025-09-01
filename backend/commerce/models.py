@@ -1,7 +1,7 @@
-# commerce/models.py
 from django.db import models
 from django.contrib.auth import get_user_model
 from restaurants.models import MenuItem, Restaurant
+from customers.models import Address
 
 User = get_user_model()
 
@@ -41,10 +41,20 @@ class Order(models.Model):
         (CANCELLED, "Cancelled"),
     ]
 
+    COD = "cod"
+    GPAY = "gpay"
+    UPI = "upi"
+    PAYMENT_CHOICES = [
+        (COD, "Cash on Delivery"),
+        (GPAY, "Google Pay"),
+        (UPI, "UPI"),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="orders")
     restaurant = models.ForeignKey(Restaurant, on_delete=models.PROTECT)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=PENDING)
     total = models.DecimalField(max_digits=10, decimal_places=2)
+
     # address snapshot
     address_line1 = models.CharField(max_length=255)
     address_line2 = models.CharField(max_length=255, blank=True)
@@ -52,6 +62,12 @@ class Order(models.Model):
     postal_code = models.CharField(max_length=20, blank=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
+
+    # payment
+    payment_method = models.CharField(
+        max_length=20, choices=PAYMENT_CHOICES, default=COD
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
 

@@ -60,6 +60,7 @@ class RestaurantCartSerializer(serializers.Serializer):
     items = CartItemSerializer(many=True)
     restaurant_total = serializers.FloatField()
 
+
 class AddToCartSerializer(serializers.Serializer):
     item_id = serializers.IntegerField()
     quantity = serializers.IntegerField(min_value=1, default=1)
@@ -101,6 +102,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "postal_code",
             "latitude",
             "longitude",
+            "payment_method",
             "items",
             "created_at",
         ]

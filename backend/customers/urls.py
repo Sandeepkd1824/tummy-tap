@@ -1,7 +1,8 @@
-# customers/urls.py
-from rest_framework.routers import DefaultRouter
-from .views import AddressViewSet
+from django.urls import path
+from .views import AddressListCreateView, AddressDetailView, SetDefaultAddressView
 
-router = DefaultRouter()
-router.register("addresses", AddressViewSet, basename="addresses")
-urlpatterns = router.urls
+urlpatterns = [
+    path("addresses/", AddressListCreateView.as_view(), name="address-list-create"),
+    path("addresses/<int:pk>/", AddressDetailView.as_view(), name="address-detail"),
+    path("addresses/<int:pk>/set-default/", SetDefaultAddressView.as_view(), name="set-default-address"),
+]
