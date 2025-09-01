@@ -206,4 +206,17 @@ static Future<Map<String, dynamic>> removeFromCart(int itemId) async {
   }
 }
 
+// Delete a specific item from cart
+static Future<void> deleteCartItem(int itemId) async {
+  final token = await TokenStorage.getAccessToken();  // ✅ FIXED
+  final url = Uri.parse("$cartBase/delete_item/$itemId/");
+  final response = await http.delete(url, headers: {
+    "Authorization": "Bearer $token",
+  });
+
+  if (response.statusCode != 204 && response.statusCode != 200) {
+    throw Exception("Failed to delete item from cart");
+  }
 }
+}
+

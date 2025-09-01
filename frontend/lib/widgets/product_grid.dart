@@ -17,6 +17,10 @@ class ProductGrid extends StatefulWidget {
 }
 
 class _ProductGridState extends State<ProductGrid> {
+  void _updateQuantity(int itemId, int newQty) {
+    widget.onQuantityChanged(itemId, newQty);
+  }
+
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
@@ -80,7 +84,7 @@ class _ProductGridState extends State<ProductGrid> {
                               borderRadius: BorderRadius.circular(8)),
                         ),
                         onPressed: () {
-                          widget.onQuantityChanged(item["id"], 1);
+                          _updateQuantity(item["id"], 1);
                         },
                         child: const Text("ADD"),
                       )
@@ -96,11 +100,7 @@ class _ProductGridState extends State<ProductGrid> {
                               icon: const Icon(Icons.remove,
                                   color: Colors.deepOrange),
                               onPressed: () {
-                                if (qty > 1) {
-                                  widget.onQuantityChanged(item["id"], qty - 1);
-                                } else {
-                                  widget.onQuantityChanged(item["id"], 0);
-                                }
+                                _updateQuantity(item["id"], qty - 1);
                               },
                             ),
                             Text("$qty",
@@ -110,7 +110,7 @@ class _ProductGridState extends State<ProductGrid> {
                               icon: const Icon(Icons.add,
                                   color: Colors.deepOrange),
                               onPressed: () {
-                                widget.onQuantityChanged(item["id"], qty + 1);
+                                _updateQuantity(item["id"], qty + 1);
                               },
                             ),
                           ],

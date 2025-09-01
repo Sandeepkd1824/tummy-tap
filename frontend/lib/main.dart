@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/otp_screen.dart';
@@ -15,12 +16,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'JWT OTP Login',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      
-      // ✅ Start with Login by default
-      initialRoute: LoginScreen.route,  
-
+      title: 'TummyTap',
+      theme: AppThemes.classic, // 👈 Change theme here
+      initialRoute: LoginScreen.route,
       routes: {
         LoginScreen.route: (context) => const LoginScreen(),
         RegisterScreen.route: (context) => const RegisterScreen(),

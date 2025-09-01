@@ -1,23 +1,27 @@
-# commerce/serializers.py
 from rest_framework import serializers
 from .models import Cart, CartItem, Order, OrderItem
-from restaurants.models import MenuItem, Restaurant
+from restaurants.models import MenuItem
 
 
 class CartItemSerializer(serializers.ModelSerializer):
-    item_name = serializers.CharField(source="item.name", read_only=True)
+    item_name = serializers.CharField(source="item.name")
+    unit_price = serializers.DecimalField(
+        source="item.price", max_digits=10, decimal_places=2
+    )
+    restaurant_id = serializers.IntegerField(source="item.restaurant.id")
+    restaurant_name = serializers.CharField(source="item.restaurant.name")
 
     class Meta:
         model = CartItem
-        fields = ["id", "item", "item_name", "unit_price", "quantity"]
-
-
-class CartRestaurantGroupSerializer(serializers.Serializer):
-    """Group of cart items belonging to one restaurant."""
-    restaurant_id = serializers.IntegerField()
-    restaurant_name = serializers.CharField()
-    items = CartItemSerializer(many=True)
-    restaurant_total = serializers.FloatField()
+        fields = [
+            "id",
+            "item",
+            "item_name",
+            "unit_price",
+            "quantity",
+            "restaurant_id",
+            "restaurant_name",
+        ]
 
 
 class CartSerializer(serializers.ModelSerializer):
@@ -29,25 +33,32 @@ class CartSerializer(serializers.ModelSerializer):
         fields = ["id", "restaurants", "subtotal"]
 
     def get_restaurants(self, obj):
-        # Group items by restaurant
-        grouped = {}
-        for ci in obj.items.select_related("item__restaurant").all():
-            rest = ci.item.restaurant
-            if rest.id not in grouped:
-                grouped[rest.id] = {
-                    "restaurant_id": rest.id,
-                    "restaurant_name": rest.name,
+        restaurants = {}
+        for item in obj.items.all():
+            rid = item.item.restaurant.id
+            if rid not in restaurants:
+                restaurants[rid] = {
+                    "restaurant_id": rid,
+                    "restaurant_name": item.item.restaurant.name,
                     "items": [],
                     "restaurant_total": 0,
                 }
-            grouped[rest.id]["items"].append(CartItemSerializer(ci).data)
-            grouped[rest.id]["restaurant_total"] += float(ci.unit_price) * ci.quantity
-
-        return list(grouped.values())
+            data = CartItemSerializer(item).data
+            restaurants[rid]["items"].append(data)
+            restaurants[rid]["restaurant_total"] += (
+                float(item.item.price) * item.quantity
+            )
+        return list(restaurants.values())
 
     def get_subtotal(self, obj):
-        return obj.subtotal()
+        return sum(float(item.item.price) * item.quantity for item in obj.items.all())
 
+
+class RestaurantCartSerializer(serializers.Serializer):
+    restaurant_id = serializers.IntegerField()
+    restaurant_name = serializers.CharField()
+    items = CartItemSerializer(many=True)
+    restaurant_total = serializers.FloatField()
 
 class AddToCartSerializer(serializers.Serializer):
     item_id = serializers.IntegerField()
@@ -58,8 +69,10 @@ class AddToCartSerializer(serializers.Serializer):
             item = MenuItem.objects.get(pk=data["item_id"])
         except MenuItem.DoesNotExist:
             raise serializers.ValidationError("Item does not exist")
+
         if not item.is_available:
             raise serializers.ValidationError("Item not available")
+
         data["item"] = item
         return data
 

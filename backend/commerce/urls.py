@@ -1,17 +1,23 @@
-# commerce/urls.py
 from django.urls import path
-from rest_framework.routers import DefaultRouter
-from .views import CartViewSet, OrderViewSet
-from django.urls import include
+from .views.cart_views import (
+    CartListView,
+    CartAddItemView,
+    CartRemoveItemView,
+    CartDeleteItemView,
+    CartClearView,
+)
+from .views.order_views import OrderListView, PlaceOrderView
 
-router = DefaultRouter()
-# these ViewSets use custom actions, register manually by include as viewset routes:
-# We'll expose custom endpoints:
 urlpatterns = [
-    path("cart/", CartViewSet.as_view({"get": "list"})),
-    path("cart/add_item/", CartViewSet.as_view({"post": "add_item"})),
-    path("cart/remove_item/", CartViewSet.as_view({"post": "remove_item"})),
-    path("cart/clear/", CartViewSet.as_view({"post": "clear"})),
-    path("orders/", OrderViewSet.as_view({"get": "list"})),
-    path("orders/place/", OrderViewSet.as_view({"post": "place"})),
+    # Cart APIs
+    path("cart/", CartListView.as_view(), name="cart-list"),
+    path("cart/add_item/", CartAddItemView.as_view(), name="cart-add"),
+    path("cart/remove_item/", CartRemoveItemView.as_view(), name="cart-remove"),
+    path(
+        "cart/delete_item/<int:item_id>/", CartDeleteItemView.as_view(), name="cart-delete"
+    ),
+    path("cart/clear/", CartClearView.as_view(), name="cart-clear"),
+    # Order APIs
+    path("orders/", OrderListView.as_view(), name="orders-list"),
+    path("orders/place/", PlaceOrderView.as_view(), name="orders-place"),
 ]
