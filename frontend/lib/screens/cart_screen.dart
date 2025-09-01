@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import 'address_screen.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -229,8 +230,7 @@ class _CartScreenState extends State<CartScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: colors.background,
                   boxShadow: [
@@ -241,22 +241,45 @@ class _CartScreenState extends State<CartScreen> {
                     )
                   ],
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
-                      "Grand Total",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Grand Total",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          "₹${subtotal.toStringAsFixed(2)}",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: colors.secondary,
+                          ),
+                        ),
+                      ],
                     ),
-                    Text(
-                      "₹${subtotal.toStringAsFixed(2)}",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: colors.secondary,
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AddressScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          "ORDER NOW",
+                          style: TextStyle(fontSize: 18),
+                        ),
                       ),
                     ),
                   ],
