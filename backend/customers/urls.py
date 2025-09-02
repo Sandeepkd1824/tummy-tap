@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import AddressListCreateView, AddressDetailView, SetDefaultAddressView
+from .views import (AddressListCreateView, AddressDetailView, SetDefaultAddressView)
 
 urlpatterns = [
     path("addresses/", AddressListCreateView.as_view(), name="address-list-create"),
