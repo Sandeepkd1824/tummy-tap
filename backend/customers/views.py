@@ -13,7 +13,8 @@ class AddressListCreateView(generics.ListCreateAPIView):
         return self.request.user.addresses.all().order_by("-created_at")
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        # Let serializer handle the user
+        serializer.save()
 
 
 class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
