@@ -24,14 +24,15 @@ class _AddressScreenState extends State<AddressScreen> {
   final TextEditingController _postalCodeController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
 
-  String _label = "home";
+  String _label = "home"; // default
   LatLng? _markerPosition;
+  late final MapController _mapController;
 
   @override
   void initState() {
     super.initState();
+    _mapController = MapController();
     _fetchAddresses();
-    _getCurrentLocation();
   }
 
   Future<void> _fetchAddresses() async {
@@ -42,15 +43,14 @@ class _AddressScreenState extends State<AddressScreen> {
       setState(() {
         addresses = fetchedAddresses;
         if (addresses.isNotEmpty) {
-          selectedAddressId = addresses.first["id"] as int;
+          selectedAddressId = addresses.first["id"] as int?;
         }
         isLoading = false;
       });
     } catch (e) {
       setState(() => isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error fetching addresses: $e")),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Error fetching addresses: $e")));
     }
   }
 
@@ -71,18 +71,20 @@ class _AddressScreenState extends State<AddressScreen> {
       _markerPosition = LatLng(position.latitude, position.longitude);
     });
 
-    await _reverseGeocode(position.latitude, position.longitude);
+    _mapController.move(_markerPosition!, 16);
+    await _reverseGeocode(_markerPosition!);
   }
 
-  Future<void> _reverseGeocode(double lat, double lng) async {
+  Future<void> _reverseGeocode(LatLng pos) async {
     try {
-      final placemarks = await placemarkFromCoordinates(lat, lng);
+      List<Placemark> placemarks =
+          await placemarkFromCoordinates(pos.latitude, pos.longitude);
       if (placemarks.isNotEmpty) {
         final place = placemarks.first;
         setState(() {
-          _line1Controller.text = place.street ?? '';
-          _cityController.text = place.locality ?? '';
-          _postalCodeController.text = place.postalCode ?? '';
+          _line1Controller.text = "${place.street ?? ''}";
+          _cityController.text = "${place.locality ?? ''}";
+          _postalCodeController.text = "${place.postalCode ?? ''}";
         });
       }
     } catch (e) {
@@ -91,6 +93,7 @@ class _AddressScreenState extends State<AddressScreen> {
   }
 
   void _addAddressDialog() {
+    _getCurrentLocation(); // fetch location when opening dialog
     showDialog(
       context: context,
       builder: (ctx) {
@@ -116,14 +119,12 @@ class _AddressScreenState extends State<AddressScreen> {
                   const SizedBox(height: 8),
                   TextField(
                     controller: _line1Controller,
-                    decoration:
-                        const InputDecoration(labelText: "Address Line 1"),
+                    decoration: const InputDecoration(labelText: "Address Line 1"),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _line2Controller,
-                    decoration:
-                        const InputDecoration(labelText: "Address Line 2"),
+                    decoration: const InputDecoration(labelText: "Address Line 2"),
                   ),
                   const SizedBox(height: 8),
                   TextField(
@@ -147,13 +148,13 @@ class _AddressScreenState extends State<AddressScreen> {
                       ? SizedBox(
                           height: 300,
                           child: FlutterMap(
+                            mapController: _mapController,
                             options: MapOptions(
                               initialCenter: _markerPosition!,
-                              initialZoom: 16,
+                              maxZoom: 18,
                               onTap: (tapPos, latlng) async {
-                                _markerPosition = latlng;
-                                await _reverseGeocode(latlng.latitude, latlng.longitude);
-                                setState(() {});
+                                setState(() => _markerPosition = latlng);
+                                await _reverseGeocode(latlng);
                               },
                             ),
                             children: [
@@ -166,8 +167,8 @@ class _AddressScreenState extends State<AddressScreen> {
                                 markers: [
                                   Marker(
                                     point: _markerPosition!,
-                                    width: 50,
-                                    height: 50,
+                                    width: 80,
+                                    height: 80,
                                     child: const Icon(
                                       Icons.location_on,
                                       color: Colors.red,
@@ -283,9 +284,8 @@ class _AddressScreenState extends State<AddressScreen> {
                               title: Text(
                                 "${addr["line1"]}, ${addr["city"]} - ${addr["postal_code"]}",
                               ),
-                              subtitle: addr["line2"] != null
-                                  ? Text(addr["line2"])
-                                  : null,
+                              subtitle:
+                                  addr["line2"] != null ? Text(addr["line2"]) : null,
                             ),
                           );
                         },
@@ -311,7 +311,8 @@ class _AddressScreenState extends State<AddressScreen> {
                                   ? null
                                   : () {
                                       final selectedAddress = addresses.firstWhere(
-                                          (a) => a["id"] == selectedAddressId);
+                                        (a) => a["id"] == selectedAddressId,
+                                      );
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(

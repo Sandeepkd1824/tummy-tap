@@ -71,7 +71,7 @@ class _ProductGridState extends State<ProductGrid> {
                     children: [
                       Positioned.fill(
                         child: FadeInImage.assetNetwork(
-                          placeholder: "assets/placeholder.png",
+                          placeholder: "../../assets/images/tummytaplogo.png",
                           image: item["image"] ?? "",
                           fit: BoxFit.cover,
                           imageErrorBuilder: (context, error, stackTrace) =>

@@ -18,8 +18,9 @@ class Address(models.Model):
     line2 = models.CharField(max_length=255, blank=True)
     city = models.CharField(max_length=120)
     postal_code = models.CharField(max_length=20, blank=True)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    latitude = models.DecimalField(max_digits=15, decimal_places=8)
+    longitude = models.DecimalField(max_digits=15, decimal_places=8)
+
     is_default = models.BooleanField(default=False)
     mobile = models.CharField(
         max_length=15,
