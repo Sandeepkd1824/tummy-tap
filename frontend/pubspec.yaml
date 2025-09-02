@@ -16,7 +16,7 @@ dependencies:
   shared_preferences: ^2.2.2
   google_maps_flutter: ^2.6.0
   flutter_map: ^8.0.0
-  latlong2: ^0.9.1        # MUST match flutter_map ^8.0.0
+  latlong2: ^0.9.1 
   geolocator: ^9.0.2
   geocoding: ^2.0.5
   intl: ^0.19.0

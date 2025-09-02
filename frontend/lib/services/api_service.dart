@@ -242,71 +242,88 @@ class ApiService {
   }
 
   static Future<List<dynamic>> fetchAddresses() async {
-    String? token = await TokenStorage.getAccessToken();
-    final response = await http.get(
-      Uri.parse("$customersBase/addresses/"),
-      headers: {"Authorization": "Bearer $token"},
-    );
+  String? token = await TokenStorage.getAccessToken();
+  final response = await http.get(
+    Uri.parse("$customersBase/addresses/"),
+    headers: {"Authorization": "Bearer $token"},
+  );
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception("Failed to fetch addresses");
-    }
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return data["results"]; // <-- return the list, not the whole map
+  } else {
+    throw Exception("Failed to fetch addresses");
   }
+}
+
 
   // ----------------- ORDERS -----------------
 
-  static Future<Map<String, dynamic>> placeOrder(int addressId) async {
-    String? token = await TokenStorage.getAccessToken();
-    final response = await http.post(
-      Uri.parse("$ordersBase/place/"),
-      headers: {
-        "Authorization": "Bearer $token",
-        "Content-Type": "application/json",
-      },
-      body: json.encode({"address_id": addressId}),
-    );
+// Place an order
+static Future<Map<String, dynamic>> placeOrder(int addressId) async {
+  String? token = await TokenStorage.getAccessToken();
+  final response = await http.post(
+    Uri.parse("$ordersBase/place/"),
+    headers: {
+      "Authorization": "Bearer $token",
+      "Content-Type": "application/json",
+    },
+    body: json.encode({"address_id": addressId}),
+  );
 
-    if (response.statusCode == 201) {
-      return jsonDecode(response.body);
-    } else {
-      return {"error": "Failed to place order"};
-    }
+  if (response.statusCode == 201) {
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  } else {
+    return {"error": "Failed to place order"};
   }
+}
 
-  static Future<List<dynamic>> fetchOrders() async {
-    String? token = await TokenStorage.getAccessToken();
-    final response = await http.get(
-      Uri.parse("$ordersBase/"),
-      headers: {"Authorization": "Bearer $token"},
-    );
+// Fetch all orders
+static Future<Map<String, dynamic>> fetchOrders() async {
+  String? token = await TokenStorage.getAccessToken();
+  final response = await http.get(
+    Uri.parse("$ordersBase/"),
+    headers: {"Authorization": "Bearer $token"},
+  );
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception("Failed to fetch orders");
-    }
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  } else {
+    throw Exception("Failed to fetch orders");
   }
+}
 
-  // ----------------- PAYMENTS -----------------
+// Fetch single order by ID
+static Future<Map<String, dynamic>> fetchOrder(int orderId) async {
+  String? token = await TokenStorage.getAccessToken();
+  final response = await http.get(
+    Uri.parse("$ordersBase/$orderId/"),
+    headers: {"Authorization": "Bearer $token"},
+  );
 
-  static Future<Map<String, dynamic>> makePayment(
-      int orderId, String method) async {
-    String? token = await TokenStorage.getAccessToken();
-    final response = await http.post(
-      Uri.parse("$ordersBase/$orderId/payment/"),
-      headers: {
-        "Authorization": "Bearer $token",
-        "Content-Type": "application/json",
-      },
-      body: json.encode({"method": method}),
-    );
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      return {"error": "Payment failed"};
-    }
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  } else {
+    throw Exception("Failed to fetch order $orderId");
   }
+}
+
+// Make payment
+static Future<Map<String, dynamic>> makePayment(int orderId, String method) async {
+  String? token = await TokenStorage.getAccessToken();
+  final response = await http.post(
+    Uri.parse("$ordersBase/$orderId/payment/"),
+    headers: {
+      "Authorization": "Bearer $token",
+      "Content-Type": "application/json",
+    },
+    body: json.encode({"method": method}),
+  );
+
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  } else {
+    return {"error": "Payment failed"};
+  }
+}
 }

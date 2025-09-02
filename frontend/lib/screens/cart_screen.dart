@@ -84,7 +84,6 @@ class _CartScreenState extends State<CartScreen> {
       appBar: AppBar(
         title: const Text("Your Cart"),
         centerTitle: true,
-        elevation: 2,
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: cartData,
@@ -93,25 +92,18 @@ class _CartScreenState extends State<CartScreen> {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return Center(
-              child: Text(
-                "Error: ${snapshot.error}",
-                style: TextStyle(color: colors.error),
-              ),
+              child: Text("Error: ${snapshot.error}", style: TextStyle(color: colors.error)),
             );
-          } else if (!snapshot.hasData ||
-              snapshot.data!["restaurants"] == null ||
-              (snapshot.data!["restaurants"] as List).isEmpty) {
+          } else if (!snapshot.hasData || (snapshot.data!["restaurants"] as List).isEmpty) {
             return Center(
-              child: Text(
-                "Your cart is empty",
-                style: TextStyle(fontSize: 18, color: colors.onBackground),
-              ),
+              child: Text("Your cart is empty", style: TextStyle(color: colors.onBackground)),
             );
           }
 
           final cart = snapshot.data!;
           final restaurants = cart["restaurants"] as List<dynamic>;
           final subtotal = cart["subtotal"] ?? 0;
+          final cartItems = restaurants.expand((r) => r["items"] as List<dynamic>).toList();
 
           return Column(
             children: [
@@ -121,90 +113,46 @@ class _CartScreenState extends State<CartScreen> {
                   itemCount: restaurants.length,
                   itemBuilder: (context, index) {
                     final restaurant = restaurants[index];
-                    final restaurantName = restaurant["restaurant_name"];
-                    final restaurantTotal = restaurant["restaurant_total"];
                     final items = restaurant["items"] as List<dynamic>;
 
                     return Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
                       margin: const EdgeInsets.symmetric(vertical: 8),
-                      elevation: 4,
                       child: Padding(
                         padding: const EdgeInsets.all(12),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              restaurantName,
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: colors.primary,
-                              ),
+                              restaurant["restaurant_name"],
+                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colors.primary),
                             ),
-                            const SizedBox(height: 6),
                             const Divider(),
                             ...items.map((item) {
                               final cartItemId = item["id"];
                               final itemId = item["item"];
-                              final itemName = item["item_name"];
                               final qty = item["quantity"];
-                              final price = double.tryParse(
-                                      item["unit_price"].toString()) ??
-                                  0;
-                              final lineTotal =
-                                  (price * qty).toStringAsFixed(2);
+                              final price = double.tryParse(item["unit_price"].toString()) ?? 0;
+                              final lineTotal = (price * qty).toStringAsFixed(2);
 
                               return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 6),
+                                padding: const EdgeInsets.symmetric(vertical: 4),
                                 child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Expanded(
-                                      child: Text(
-                                        itemName,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
+                                    Expanded(child: Text(item["item_name"], style: const TextStyle(fontWeight: FontWeight.w500))),
                                     IconButton(
-                                      icon: Icon(Icons.remove_circle,
-                                          color: colors.error),
-                                      onPressed: () => _decrementItem(
-                                          itemId, qty, cartItemId),
+                                      icon: Icon(Icons.remove_circle, color: colors.error),
+                                      onPressed: () => _decrementItem(itemId, qty, cartItemId),
                                     ),
-                                    Text(
-                                      "$qty",
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                                    Text("$qty", style: const TextStyle(fontWeight: FontWeight.bold)),
                                     IconButton(
-                                      icon: Icon(Icons.add_circle,
-                                          color: colors.secondary),
-                                      onPressed: () =>
-                                          _incrementItem(itemId),
+                                      icon: Icon(Icons.add_circle, color: colors.secondary),
+                                      onPressed: () => _incrementItem(itemId),
                                     ),
-                                    Text(
-                                      "₹$lineTotal",
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: colors.onBackground,
-                                      ),
-                                    ),
+                                    Text("₹$lineTotal", style: TextStyle(fontWeight: FontWeight.bold, color: colors.onBackground)),
                                     IconButton(
-                                      icon: Icon(Icons.delete,
-                                          color: colors.error),
-                                      onPressed: () =>
-                                          _deleteItem(cartItemId),
+                                      icon: Icon(Icons.delete, color: colors.error),
+                                      onPressed: () => _deleteItem(cartItemId),
                                     ),
                                   ],
                                 ),
@@ -214,12 +162,8 @@ class _CartScreenState extends State<CartScreen> {
                             Align(
                               alignment: Alignment.centerRight,
                               child: Text(
-                                "Restaurant Total: ₹${restaurantTotal.toStringAsFixed(2)}",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: colors.secondary,
-                                ),
+                                "Restaurant Total: ₹${restaurant["restaurant_total"].toStringAsFixed(2)}",
+                                style: TextStyle(fontWeight: FontWeight.bold, color: colors.secondary),
                               ),
                             ),
                           ],
@@ -231,56 +175,30 @@ class _CartScreenState extends State<CartScreen> {
               ),
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: colors.background,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      offset: const Offset(0, -2),
-                      blurRadius: 5,
-                    )
-                  ],
-                ),
+                decoration: BoxDecoration(color: colors.background, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), offset: const Offset(0, -2), blurRadius: 5)]),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          "Grand Total",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          "₹${subtotal.toStringAsFixed(2)}",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: colors.secondary,
-                          ),
-                        ),
+                        const Text("Grand Total", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        Text("₹${subtotal.toStringAsFixed(2)}", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colors.secondary)),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const AddressScreen(),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          "ORDER NOW",
-                          style: TextStyle(fontSize: 18),
-                        ),
-                      ),
+                    ElevatedButton(
+                      onPressed: cartItems.isEmpty
+                          ? null
+                          : () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => AddressScreen(cartItems: cartItems.cast<Map<String, dynamic>>()),
+                                ),
+                              );
+                            },
+                      child: const Text("ORDER NOW", style: TextStyle(fontSize: 18)),
                     ),
                   ],
                 ),

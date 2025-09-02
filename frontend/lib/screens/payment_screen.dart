@@ -1,110 +1,90 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'success_screen.dart';
+import '../services/api_service.dart';
+import 'order_tracking_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
+  final List<Map<String, dynamic>> cartItems;
   final int addressId;
 
-  const PaymentScreen({super.key, required this.addressId});
+  const PaymentScreen({super.key, required this.cartItems, required this.addressId});
 
   @override
   State<PaymentScreen> createState() => _PaymentScreenState();
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
-  String? _selectedMethod;
-  bool _isLoading = false;
+  bool isLoading = false;
+  String? selectedMethod;
+  final List<String> paymentMethods = ["Cash", "UPI", "Card"];
 
-  Future<void> _placeOrder() async {
-    if (_selectedMethod == null) {
+  Future<void> _placeOrderAndPay() async {
+    if (selectedMethod == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please select a payment method")),
       );
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() => isLoading = true);
 
     try {
-      final response = await http.post(
-        Uri.parse("http://127.0.0.1:8000/api/orders/place/"), // 🔗 Replace with your server
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer YOUR_AUTH_TOKEN", // ✅ replace with real token
-        },
-        body: json.encode({
-          "address_id": widget.addressId,
-          "payment_method": _selectedMethod,
-        }),
+      final orderResponse = await ApiService.placeOrder(widget.addressId);
+      if (orderResponse.containsKey("error")) throw Exception(orderResponse["error"]);
+
+      final orderId = orderResponse["id"];
+      final paymentResponse = await ApiService.makePayment(orderId, selectedMethod!);
+      if (paymentResponse.containsKey("error")) throw Exception(paymentResponse["error"]);
+
+      // Navigate to order tracking (all orders)
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const OrderTrackingScreen()),
       );
 
-      if (response.statusCode == 201) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => SuccessScreen(paymentMethod: _selectedMethod!),
-          ),
-        );
-      } else {
-        final error = json.decode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Order failed: ${error['error'] ?? 'Unknown error'}")),
-        );
-      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Something went wrong: $e")),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {
-      setState(() => _isLoading = false);
+      setState(() => isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Payment")),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            RadioListTile<String>(
-              value: "card",
-              groupValue: _selectedMethod,
-              title: const Text("Credit/Debit Card"),
-              secondary: const Icon(Icons.credit_card),
-              onChanged: (value) => setState(() => _selectedMethod = value),
-            ),
-            RadioListTile<String>(
-              value: "gpay",
-              groupValue: _selectedMethod,
-              title: const Text("Google Pay (UPI)"),
-              secondary: const Icon(Icons.account_balance_wallet),
-              onChanged: (value) => setState(() => _selectedMethod = value),
-            ),
-            RadioListTile<String>(
-              value: "cod",
-              groupValue: _selectedMethod,
-              title: const Text("Cash on Delivery"),
-              secondary: const Icon(Icons.money),
-              onChanged: (value) => setState(() => _selectedMethod = value),
-            ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _placeOrder,
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("CONFIRM PAYMENT"),
+      appBar: AppBar(title: const Text("Payment"), centerTitle: true),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Select Payment Method", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  ...paymentMethods.map((method) {
+                    final isSelected = selectedMethod == method;
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      child: ListTile(
+                        title: Text(method),
+                        trailing: isSelected ? Icon(Icons.check_circle, color: colors.primary) : null,
+                        onTap: () => setState(() => selectedMethod = method),
+                      ),
+                    );
+                  }).toList(),
+                  const Spacer(),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _placeOrderAndPay,
+                      child: const Text("Pay & Place Order", style: TextStyle(fontSize: 18)),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
     );
   }
 }
